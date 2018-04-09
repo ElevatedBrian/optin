@@ -1,200 +1,174 @@
 /*
-	Phantom by HTML5 UP
+	Eventually by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
 
-(function($) {
+(function() {
 
-	skel.breakpoints({
-		xlarge:	'(max-width: 1680px)',
-		large:	'(max-width: 1280px)',
-		medium:	'(max-width: 980px)',
-		small:	'(max-width: 736px)',
-		xsmall:	'(max-width: 480px)'
-	});
+	"use strict";
 
-	$(function() {
+	// Methods/polyfills.
 
-		var	$window = $(window),
-			$body = $('body');
+		// classList | (c) @remy | github.com/remy/polyfills | rem.mit-license.org
+			!function(){function t(t){this.el=t;for(var n=t.className.replace(/^\s+|\s+$/g,"").split(/\s+/),i=0;i<n.length;i++)e.call(this,n[i])}function n(t,n,i){Object.defineProperty?Object.defineProperty(t,n,{get:i}):t.__defineGetter__(n,i)}if(!("undefined"==typeof window.Element||"classList"in document.documentElement)){var i=Array.prototype,e=i.push,s=i.splice,o=i.join;t.prototype={add:function(t){this.contains(t)||(e.call(this,t),this.el.className=this.toString())},contains:function(t){return-1!=this.el.className.indexOf(t)},item:function(t){return this[t]||null},remove:function(t){if(this.contains(t)){for(var n=0;n<this.length&&this[n]!=t;n++);s.call(this,n,1),this.el.className=this.toString()}},toString:function(){return o.call(this," ")},toggle:function(t){return this.contains(t)?this.remove(t):this.add(t),this.contains(t)}},window.DOMTokenList=t,n(Element.prototype,"classList",function(){return new t(this)})}}();
 
-		// Disable animations/transitions until the page has loaded.
-			$body.addClass('is-loading');
+		// canUse
+			window.canUse=function(p){if(!window._canUse)window._canUse=document.createElement("div");var e=window._canUse.style,up=p.charAt(0).toUpperCase()+p.slice(1);return p in e||"Moz"+up in e||"Webkit"+up in e||"O"+up in e||"ms"+up in e};
 
-			$window.on('load', function() {
-				window.setTimeout(function() {
-					$body.removeClass('is-loading');
-				}, 100);
-			});
+		// window.addEventListener
+			(function(){if("addEventListener"in window)return;window.addEventListener=function(type,f){window.attachEvent("on"+type,f)}})();
 
-		// Touch?
-			if (skel.vars.mobile)
-				$body.addClass('is-touch');
+	// Vars.
+		var	$body = document.querySelector('body');
 
-		// Forms.
-			var $form = $('form');
+	// Disable animations/transitions until everything's loaded.
+		$body.classList.add('is-loading');
 
-			// Auto-resizing textareas.
-				$form.find('textarea').each(function() {
+		window.addEventListener('load', function() {
+			window.setTimeout(function() {
+				$body.classList.remove('is-loading');
+			}, 100);
+		});
 
-					var $this = $(this),
-						$wrapper = $('<div class="textarea-wrapper"></div>'),
-						$submits = $this.find('input[type="submit"]');
+	// Slideshow Background.
+		(function() {
 
-					$this
-						.wrap($wrapper)
-						.attr('rows', 1)
-						.css('overflow', 'hidden')
-						.css('resize', 'none')
-						.on('keydown', function(event) {
+			// Settings.
+				var settings = {
 
-							if (event.keyCode == 13
-							&&	event.ctrlKey) {
+					// Images (in the format of 'url': 'alignment').
+						images: {
+							'images/bg01.jpg': 'center',
+							'images/bg02.jpg': 'center',
+							'images/bg03.jpg': 'center'
+						},
 
-								event.preventDefault();
-								event.stopPropagation();
+					// Delay.
+						delay: 6000
 
-								$(this).blur();
+				};
 
-							}
+			// Vars.
+				var	pos = 0, lastPos = 0,
+					$wrapper, $bgs = [], $bg,
+					k, v;
 
-						})
-						.on('blur focus', function() {
-							$this.val($.trim($this.val()));
-						})
-						.on('input blur focus --init', function() {
+			// Create BG wrapper, BGs.
+				$wrapper = document.createElement('div');
+					$wrapper.id = 'bg';
+					$body.appendChild($wrapper);
 
-							$wrapper
-								.css('height', $this.height());
+				for (k in settings.images) {
 
-							$this
-								.css('height', 'auto')
-								.css('height', $this.prop('scrollHeight') + 'px');
+					// Create BG.
+						$bg = document.createElement('div');
+							$bg.style.backgroundImage = 'url("' + k + '")';
+							$bg.style.backgroundPosition = settings.images[k];
+							$wrapper.appendChild($bg);
 
-						})
-						.on('keyup', function(event) {
+					// Add it to array.
+						$bgs.push($bg);
 
-							if (event.keyCode == 9)
-								$this
-									.select();
+				}
 
-						})
-						.triggerHandler('--init');
+			// Main loop.
+				$bgs[pos].classList.add('visible');
+				$bgs[pos].classList.add('top');
 
-					// Fix.
-						if (skel.vars.browser == 'ie'
-						||	skel.vars.mobile)
-							$this
-								.css('max-height', '10em')
-								.css('overflow-y', 'auto');
+				// Bail if we only have a single BG or the client doesn't support transitions.
+					if ($bgs.length == 1
+					||	!canUse('transition'))
+						return;
 
-				});
+				window.setInterval(function() {
 
-			// Fix: Placeholder polyfill.
-				$form.placeholder();
+					lastPos = pos;
+					pos++;
 
-		// Prioritize "important" elements on medium.
-			skel.on('+medium -medium', function() {
-				$.prioritize(
-					'.important\\28 medium\\29',
-					skel.breakpoint('medium').active
-				);
-			});
+					// Wrap to beginning if necessary.
+						if (pos >= $bgs.length)
+							pos = 0;
 
-		// Menu.
-			var $menu = $('#menu');
+					// Swap top images.
+						$bgs[lastPos].classList.remove('top');
+						$bgs[pos].classList.add('visible');
+						$bgs[pos].classList.add('top');
 
-			$menu.wrapInner('<div class="inner"></div>');
-
-			$menu._locked = false;
-
-			$menu._lock = function() {
-
-				if ($menu._locked)
-					return false;
-
-				$menu._locked = true;
-
-				window.setTimeout(function() {
-					$menu._locked = false;
-				}, 350);
-
-				return true;
-
-			};
-
-			$menu._show = function() {
-
-				if ($menu._lock())
-					$body.addClass('is-menu-visible');
-
-			};
-
-			$menu._hide = function() {
-
-				if ($menu._lock())
-					$body.removeClass('is-menu-visible');
-
-			};
-
-			$menu._toggle = function() {
-
-				if ($menu._lock())
-					$body.toggleClass('is-menu-visible');
-
-			};
-
-			$menu
-				.appendTo($body)
-				.on('click', function(event) {
-					event.stopPropagation();
-				})
-				.on('click', 'a', function(event) {
-
-					var href = $(this).attr('href');
-
-					event.preventDefault();
-					event.stopPropagation();
-
-					// Hide.
-						$menu._hide();
-
-					// Redirect.
-						if (href == '#menu')
-							return;
-
+					// Hide last image after a short delay.
 						window.setTimeout(function() {
-							window.location.href = href;
-						}, 350);
+							$bgs[lastPos].classList.remove('visible');
+						}, settings.delay / 2);
 
-				})
-				.append('<a class="close" href="#menu">Close</a>');
+				}, settings.delay);
 
-			$body
-				.on('click', 'a[href="#menu"]', function(event) {
+		})();
+
+	// Signup Form.
+		(function() {
+
+			// Vars.
+				var $form = document.querySelectorAll('#signup-form')[0],
+					$submit = document.querySelectorAll('#signup-form input[type="submit"]')[0],
+					$message;
+
+			// Bail if addEventListener isn't supported.
+				if (!('addEventListener' in $form))
+					return;
+
+			// Message.
+				$message = document.createElement('span');
+					$message.classList.add('message');
+					$form.appendChild($message);
+
+				$message._show = function(type, text) {
+
+					$message.innerHTML = text;
+					$message.classList.add(type);
+					$message.classList.add('visible');
+
+					window.setTimeout(function() {
+						$message._hide();
+					}, 3000);
+
+				};
+
+				$message._hide = function() {
+					$message.classList.remove('visible');
+				};
+
+			// Events.
+			// Note: If you're *not* using AJAX, get rid of this event listener.
+				$form.addEventListener('submit', function(event) {
 
 					event.stopPropagation();
 					event.preventDefault();
 
-					// Toggle.
-						$menu._toggle();
+					// Hide message.
+						$message._hide();
 
-				})
-				.on('click', function(event) {
+					// Disable submit.
+						$submit.disabled = true;
 
-					// Hide.
-						$menu._hide();
+					// Process form.
+					// Note: Doesn't actually do anything yet (other than report back with a "thank you"),
+					// but there's enough here to piece together a working AJAX submission call that does.
+						window.setTimeout(function() {
 
-				})
-				.on('keydown', function(event) {
+							// Reset form.
+								$form.reset();
 
-					// Hide on escape.
-						if (event.keyCode == 27)
-							$menu._hide();
+							// Enable submit.
+								$submit.disabled = false;
+
+							// Show message.
+								$message._show('success', 'Thank you!');
+								//$message._show('failure', 'Something went wrong. Please try again.');
+
+						}, 750);
 
 				});
 
-	});
+		})();
 
-})(jQuery);
+})();
